@@ -27,33 +27,34 @@ class Othello_Network():
         # Make Network
         # --------------
 
-        self.input_layer = tf.placeholder(
-                                     shape=[None, self.board_dim, self.board_dim, (self.time_steps * 2 + 1)],
-                                     dtype=tf.float32, name='input')
-        self.net = self._add_conv_layer(self.input_layer, name='conv1')
-        for i in range(self.n_res_layers):
-            self.net = self._add_res_layer(self.net, name='res{}'.format(i + 1))
+        with tf.Graph().as_default() as net1_graph:
+            self.input_layer = tf.placeholder(
+                                         shape=[None, self.board_dim, self.board_dim, (self.time_steps * 2 + 1)],
+                                         dtype=tf.float32, name='input')
+            self.net = self._add_conv_layer(self.input_layer, name='conv1')
+            for i in range(self.n_res_layers):
+                self.net = self._add_res_layer(self.net, name='res{}'.format(i + 1))
 
-        self.policy_logits = self._policy_head(self.net)
-        self.value_estimate = self._value_head(self.net)
+            self.policy_logits = self._policy_head(self.net)
+            self.value_estimate = self._value_head(self.net)
 
-        self.mcts_pi = tf.placeholder(shape=[None, (self.board_dim**2 + 1)], dtype=tf.float32, name='pi')
-        self.winner_z = tf.placeholder(shape=[None, 1], dtype=tf.float32, name='z')
+            self.mcts_pi = tf.placeholder(shape=[None, (self.board_dim**2 + 1)], dtype=tf.float32, name='pi')
+            self.winner_z = tf.placeholder(shape=[None, 1], dtype=tf.float32, name='z')
 
-        # Loss, composed of cross entropy, mse, and regularization
-        xent = tf.nn.softmax_cross_entropy_with_logits(labels=self.mcts_pi, logits=self.policy_logits)
-        mse = tf.losses.mean_squared_error(self.winner_z, self.value_estimate)
-        reg_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
-        self.loss = tf.reduce_mean(mse - xent + c * sum(reg_losses))
+            # Loss, composed of cross entropy, mse, and regularization
+            xent = tf.nn.softmax_cross_entropy_with_logits(labels=self.mcts_pi, logits=self.policy_logits)
+            mse = tf.losses.mean_squared_error(self.winner_z, self.value_estimate)
+            reg_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+            self.loss = tf.reduce_mean(mse - xent + c * sum(reg_losses))
 
-        self.optimizer = tf.train.AdamOptimizer().minimize(self.loss)
+            self.optimizer = tf.train.AdamOptimizer().minimize(self.loss)
 
-        # more ops
-        self.init_op = tf.global_variables_initializer()
-        self.saver = tf.train.Saver()
+            # more ops
+            self.init_op = tf.global_variables_initializer()
+            self.saver = tf.train.Saver()
 
         # initialize session
-        self.sess = tf.Session()
+        self.sess = tf.Session(graph=net1_graph)
         self.sess.run(self.init_op)
 
 
@@ -235,4 +236,4 @@ class Othello_Network():
                 if i % 10 == 0:
                     print("{}: loss: {}".format(i, l))
 
-        return losses
+        self.losses = losses
