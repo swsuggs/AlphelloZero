@@ -12,6 +12,7 @@ import datetime
 from othello import *
 import time
 from tqdm import trange
+from softmax import softmax
 
 
 # Helper Functions
@@ -44,9 +45,9 @@ def array_to_tuple(array):
 
 class MCTS(object):
     def __init__(self, p, board, player, CNN, c = 1):
-        self.Q = 0
-        self.N = 0
-        self.wins = 0
+        self.Q = 0.
+        self.N = 0.
+        self.wins = 0.
         self.p = p
         self.board = board
         self.leaf = True
@@ -59,15 +60,15 @@ class MCTS(object):
     def get_children(self):
         # Specify that node is no longer a leaf.
         self.leaf = False
-        self.N += 1
         # Get legal moves
         xs, ys, boards = get_legal_moves(self.board, self.player)
 
         # Get CNN evaluation of moves
         nn_inputs = make_nn_inputs(self.board, self.player)
-        self.move_eval = self.CNN.estimate_policy(nn_inputs)
+        self.move_eval = self.CNN.estimate_policy(nn_inputs).flatten()
 
-        winner, end_game = check_game_over(board, player)
+
+        winner, end_game = check_game_over(self.board, self.player)
         if end_game:
             # Update note statistics
             self.wins += winner
@@ -76,20 +77,21 @@ class MCTS(object):
             # Send back the node's negative value to other player
             return self.player*winner
         else:
-            d_wins = self.CNN.estimate_value(nn_inputs)
+            d_wins = self.CNN.estimate_value(nn_inputs).flatten()
             self.wins += d_wins
 
         # This is the only move if we have to pass
         if len(xs) == 0: # Corresponds to passing
             move_p = self.move_eval[-1]
-            self.children = [MCTS(move_p, self.board, -self.player, self.CNN, c=self.c)]
+            self.children = [MCTS(1, self.board, -self.player, self.CNN, c=self.c)]
             self.move_positions = ["pass"]
 
         # Otherwise build a child for each possible move
         else:
-            possible_moves = self.move_eval[:64].reshape(8,8)
+            possible_moves = self.move_eval[:64].reshape((8,8))
             # Calc probabilities for each child
             self.child_ps = np.array([possible_moves[x, y] for x, y in zip(xs, ys)])
+            self.child_ps /= self.child_ps.sum()
             self.children = [MCTS(self.child_ps[i], boards[i,:,:], -self.player, self.CNN, c=self.c) for i in range(len(xs))]
             # Keep track of move positions for each child
             self.move_positions = [(x,y) for x, y in zip(xs, ys)]
@@ -99,7 +101,7 @@ class MCTS(object):
         return self.player*d_wins
 
     def get_child_scores(self):
-        scores = np.array([child.Q + self.c*child.p*(np.sqrt(self.N)/(child.N+1)) for child in self.children])
+        scores = np.array([child.Q + self.c*child.p*(np.sqrt(self.N)/(child.N+1)) for child in self.children]).flatten()
         return scores
 
     def build_tree(self):
@@ -123,15 +125,34 @@ class MCTS(object):
         # Return the negative of our d_wins to opponent
         return -d_wins
 
-    def get_best_move(self, c=None):
-        if c is not None:
-            self.c = c
-        scores = self.get_child_scores()
-        best = np.argmax(scores)
-        return self.children[best], self.move_positions(best)
+    def get_next_move(self, tau=1, best=False):
+        """
+        Choose next move in proportion to N^(1/tau), where N is the current
+        visit count of each child
+        """
+        visit_nums = np.array([child.N for child in self.children])**(1/tau)
+        visit_probs = visit_nums/visit_nums.sum()
+        next_node = np.random.choice(range(visit_probs.shape[0]), p=visit_probs)
+        return self.children[next_node], self.move_positions(next_node)
 
-    def get_move_probs(self):
-        pass
+    def get_move_probs(self, tau=1):
+        visit_nums = np.array([child.N for child in self.children], dtype=np.float32)
+        # print(visit_nums)
+        visit_logits = visit_nums**(1/tau)
+        move_probs = visit_nums/visit_nums.sum()
+        # print(move_probs)
+        board_move_probs = np.zeros(self.board.shape)
+        if self.move_positions[0] =="pass":
+            all_move_probs = np.zeros(1,len(self.board.flatten())+1)
+            all_move_probs[-1] = 1
+            return all_move_probs.reshape((1,65))
+        for i, tup in enumerate(self.move_positions):
+            x, y = tup
+            board_move_probs[x,y] = move_probs[i]
+        # print(board_move_probs)
+        all_move_probs = np.zeros(len(self.board.flatten())+1)
+        all_move_probs[:-1] = board_move_probs.flatten()
+        return all_move_probs.reshape((1,65))
 
 
 class fakeCNN(object):
