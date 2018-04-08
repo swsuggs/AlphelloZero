@@ -163,7 +163,7 @@ class MCTS(object):
         all_move_probs[:-1] = board_move_probs.flatten()
         return all_move_probs.reshape((1,65))
 
-    def get_child(self, move):
+    def get_child_by_move(self, move):
         """
         Get child node corresponding to particular move (i.e. opponent move)
         """
