@@ -76,5 +76,8 @@ if __name__ == '__main__':
     # Otherwise, that is not good.
 
     # if win_rate >= .55:
-    #     copy weights from training_net into playing_net
+    #     copy weights from training_net into playing_net.  The following two lines should be good to go.
+    #     training_net.save_weights()
+    #     playing_net.restore_weights()
+
     # repeat all of the above from game playing loop.
