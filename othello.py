@@ -210,12 +210,12 @@ def get_legal_moves(board, player, boardsize=8):
 
 def check_game_over(board, player, boardsize=8):
     if np.abs(board).sum() == boardsize**2:
-        return np.sign(board.sum()), True
+        return True, np.sign(board.sum())
     if len(get_legal_moves(board, player)[0]) == 0:
         player *= -1
         if len(get_legal_moves(board, player)[0]) == 0:
-            return np.sign(board.sum()), True
-    return None, False
+            return True, np.sign(board.sum())
+    return False, None
 
 
 def make_nn_inputs(board, player):
@@ -228,6 +228,9 @@ def make_nn_inputs(board, player):
     nn_inputs[:,:,1] *= (board == -1)
     nn_inputs[:,:,2] *= player
     return nn_inputs.reshape((1,n,n,3))
+
+
+
 
 class Othello(object):
     """

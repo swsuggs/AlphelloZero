@@ -58,8 +58,6 @@ class MCTS(object):
         # self.loser = False
 
     def get_children(self):
-        # Specify that node is no longer a leaf.
-        self.leaf = False
         # Get legal moves
         xs, ys, boards = get_legal_moves(self.board, self.player)
 
@@ -68,15 +66,17 @@ class MCTS(object):
         self.move_eval = self.CNN.estimate_policy(nn_inputs).flatten()
 
 
-        winner, end_game = check_game_over(self.board, self.player)
-        if end_game:
+        game_over, winner = check_game_over(self.board, self.player)
+        if game_over:
             # Update note statistics
             self.wins += winner
             self.Q = self.wins / self.N
 
             # Send back the node's negative value to other player
             return self.player*winner
+
         else:
+            self.leaf = False
             d_wins = self.CNN.estimate_value(nn_inputs).flatten()
             self.wins += d_wins
 
@@ -136,23 +136,39 @@ class MCTS(object):
         return self.children[next_node], self.move_positions(next_node)
 
     def get_move_probs(self, tau=1):
+        """
+        Determine probability of making each move based on temperature tau
+        """
+        # Begin by getting visit count for each child
         visit_nums = np.array([child.N for child in self.children], dtype=np.float32)
-        # print(visit_nums)
         visit_logits = visit_nums**(1/tau)
+
+        # Convert visit nums to move probabilities
         move_probs = visit_nums/visit_nums.sum()
-        # print(move_probs)
-        board_move_probs = np.zeros(self.board.shape)
+
+        # If player has to pass, let this be the only move
         if self.move_positions[0] =="pass":
-            all_move_probs = np.zeros(1,len(self.board.flatten())+1)
+            all_move_probs = np.zeros(len(self.board.flatten())+1)
             all_move_probs[-1] = 1
             return all_move_probs.reshape((1,65))
+
+        # Otherwise, label probabilities as they would be on the board
+        board_move_probs = np.zeros(self.board.shape)
         for i, tup in enumerate(self.move_positions):
             x, y = tup
             board_move_probs[x,y] = move_probs[i]
-        # print(board_move_probs)
+
+        # Make move probs into the appropriately sized array and return
         all_move_probs = np.zeros(len(self.board.flatten())+1)
         all_move_probs[:-1] = board_move_probs.flatten()
         return all_move_probs.reshape((1,65))
+
+    def get_child(self, move):
+        """
+        Get child node corresponding to particular move (i.e. opponent move)
+        """
+        child_ind = self.move_positions.index(move)
+        return self.children(child_ind)
 
 
 class fakeCNN(object):
@@ -164,14 +180,18 @@ class fakeCNN(object):
         return self.policy
 
     def estimate_value(self, state):
-        return np.random.rand()*2 - 1
+        return np.array([np.random.rand()*2 - 1])
 
 
 if __name__ == '__main__':
     tic = time.time()
     game = Othello()
-    board = game.board
-    player = game.player
+    board = np.zeros((8,8))
+    board[2:-2, 2:-2] = 1
+    board[3:-3, 3:-3] = -1
+    player = 1
     tree_search = MCTS(1, board, player, fakeCNN())
-    for i in trange(10000):
+    print(check_game_over(board,player))
+    for i in trange(100):
         tree_search.build_tree()
+    print(tree_search.get_move_probs())

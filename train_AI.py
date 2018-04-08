@@ -7,7 +7,6 @@ from tqdm import tqdm, trange
 
 
 
-
 if __name__ == '__main__':
     game = Othello()
     board = np.abs(game.board)
