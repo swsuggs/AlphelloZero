@@ -274,6 +274,14 @@ class Othello(object):
         self._lettermap = {letter:i for i, letter in enumerate(ascii_lowercase)}
 
 
+    def get_game_state(self):
+        state = np.zeros((self.boardsize, self.boardsize, 3))  # this is only working for a state that includes no history, only current
+        state[:,:,0][self.board<0] = -1
+        state[:,:,1][self.board>0] = 1
+        state[:,:,2] = self.player
+        return state
+
+
     def _calc_current_score(self):
         """
         Get the relative score of the board (positive means white is winning)
