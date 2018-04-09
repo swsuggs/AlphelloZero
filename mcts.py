@@ -135,7 +135,7 @@ class MCTS(object):
         next_node = np.random.choice(range(visit_probs.shape[0]), p=visit_probs)
         return self.children[next_node], self.move_positions(next_node)
 
-    def get_move_probs(self, tau=1):
+    def get_move_probs(self, tau=1, return_child_probs=False):
         """
         Determine probability of making each move based on temperature tau
         """
@@ -161,7 +161,10 @@ class MCTS(object):
         # Make move probs into the appropriately sized array and return
         all_move_probs = np.zeros(len(self.board.flatten())+1)
         all_move_probs[:-1] = board_move_probs.flatten()
-        return all_move_probs.reshape((1,65))
+        all_move_probs = all_move_probs.reshape((1,65))
+        if return_child_probs:
+            return  all_move_probs, move_probs
+        return all_move_probs
 
     def get_child_by_move(self, move):
         """
@@ -170,6 +173,74 @@ class MCTS(object):
         child_ind = self.move_positions.index(move)
         return self.children(child_ind)
 
+
+def selfplay(mcts_instance, search_iters=200):
+    """
+    Play self to generate CNN training data
+    """
+    # Set up game and get params
+    game = Othello()
+    board = game.board
+    boardsize = board.shape[0]
+    player = game.player
+
+    # Set up arrays to keep track of players, game_states, move_probs
+    states = np.zeros((200, boardsize, boardsize, 3))
+    move_probs = np.zeros((200,65))
+
+    # Keep track of whether game is over, as well as temperature on move choice
+    game_over = False
+    i = 0
+    tau = 1
+
+    while not game_over:
+        # Make tau small as game progresses
+        if i == 20:
+            tau = .01
+
+        # Record current state
+        states[i] = make_nn_inputs(mcts_instance.board, player)
+
+        # Check to see if game has ended
+        game_over, winner = check_game_over(board, player)
+        if game_over:
+            outcome = np.ones(i-1) * winner
+            final_states = states[:i-1,:,:,:]
+            final_probs = move_probs[:i-1,:]
+            break
+
+        # If only one option, select that
+        if i > 0:
+            if len(mcts_instance.children) == 1:
+                move_probs[i,:] = mcts_instance.get_move_probs(tau=tau)
+                print(mcts_instance.move_positions[0])
+                mcts_instance = mcts_instance.children[0]
+                board = mcts_instance.board
+                player *= -1
+                i += 1
+                continue
+
+        # If multiple moves, choose them via tree search
+        for j in trange(search_iters):
+            mcts_instance.build_tree()
+
+        # After performing tree search, pick a move and update
+        move_probs[i], selection_probs = mcts_instance.get_move_probs(tau=tau, return_child_probs=True)
+        move = np.random.choice(range(len(selection_probs)), p=selection_probs)
+        print(mcts_instance.move_positions[move])
+        mcts_instance = mcts_instance.children[move]
+        player *= -1
+
+
+        print("\n************\n")
+        print("Player: {}, Board:".format(player))
+        print(mcts_instance.board)
+        # Update iter count
+        i += 1
+
+    print("Final Score: ", mcts_instance.board.sum())
+    print("Final Board: \n", mcts_instance.board)
+    return final_states, final_probs, outcome
 
 class fakeCNN(object):
     def __init__(self):
@@ -186,12 +257,14 @@ class fakeCNN(object):
 if __name__ == '__main__':
     tic = time.time()
     game = Othello()
-    board = np.zeros((8,8))
-    board[2:-2, 2:-2] = 1
-    board[3:-3, 3:-3] = -1
-    player = 1
+    board = game.board
+    player = game.player
+    # board = np.zeros((8,8))
+    # board[2:-2, 2:-2] = 1
+    # board[3:-3, 3:-3] = -1
+    # player = 1
     tree_search = MCTS(1, board, player, fakeCNN())
-    print(check_game_over(board,player))
-    for i in trange(100):
-        tree_search.build_tree()
-    print(tree_search.get_move_probs())
+
+    final_states, final_probs, outcome = selfplay(tree_search)
+    print(final_states[:,0,0,2])
+    print(final_states[-1,:,:,:])

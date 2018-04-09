@@ -88,15 +88,16 @@ def check_row(input_row, pos, piece_to_place):
                     row[i:] = piece_to_place
                     return 1, row
                 return 0, row
+
     # Now look at cases where it might be in the middle
     else:
         if (row[pos-1] in set([0,piece_to_place])) & (row[pos+1] in set([0, piece_to_place])):
             return 0, row
 
         # Account for cases where we play next to end piece
-        if pos+2 < n:
+        if pos+1 < n:
             # Otherwise, loop through until we find one of our pieces
-            for i in range(pos+2, n):
+            for i in range(pos+1, n):
                 # Empty space
                 if row[i]==0:
                     break
@@ -106,9 +107,9 @@ def check_row(input_row, pos, piece_to_place):
                     row[pos:i] = piece_to_place
 
         # Case where we play next to front spot
-        if pos-2 >= 0:
+        if pos-1 >= 0:
             # Otherwise, find one of our pieces or an empty space
-            for i in range(pos-2, -1, -1):
+            for i in range(pos-1, -1, -1):
                 if row[i]==0:
                     break
                 if row[i]==piece_to_place:
@@ -337,11 +338,11 @@ if __name__ == '__main__':
 
 
     # Test legal move checker
-    game = Othello()
-    print(game.board)
+    # game = Othello()
+    # print(game.board)
     # print(adj_to_opponent(game.board, game.player))
 
-    print(get_legal_moves(game.board, game.player))
+    # print(get_legal_moves(game.board, game.player))
     # game._play_move((2,3))
     # print(game.board)
     # print(get_shifts(game.board))
@@ -352,7 +353,7 @@ if __name__ == '__main__':
     # row1 = np.array([0,0,0,1,1,-1])
     # row2 = np.array([1,1,1,1,0,0])
     # row3 = np.array([1,1,0,1,1,1])
-    # row4 = np.array([0,-1,1,1,0,1])
+    row4 = np.array([ 1., 1.,  1.,  1., -1.,  0.,  0., -1.])
     # row5 = np.array([1,-1,1,-1,1,0])
     # row6 = np.array([-1,1,0,1,-1,1])
     # row7 = np.array([1,0])
@@ -364,8 +365,8 @@ if __name__ == '__main__':
     # print(row2, check_row(row2, 4, 1))
     # print(row3,check_row(row3, 2,-1))
     # print(row3,check_row(row3, 2, 1))
-    # print(row4,check_row(row4, 0,-1))
-    # print(row4,check_row(row4, 0, 1))
+    print(row4,check_row(row4, 6,-1))
+    print(row4,check_row(row4, 6, 1))
     # print(row5,check_row(row5, 5,-1))
     # print(row5,check_row(row5, 5, 1))
     # print(row6,check_row(row6, 2,-1))
