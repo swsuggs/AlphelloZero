@@ -47,12 +47,12 @@ class MCTS(object):
     def __init__(self, p, board, player, CNN, c = 1):
         self.Q = 0.
         self.N = 0.
-        self.wins = 0.
+        self.wins = 0. # NOTE: This is win from perspective of PARENT node
         self.p = p
         self.board = board
         self.leaf = True
         self.player = player
-        self.CNN = CNN
+        self.CNN = CNN # NOTE: Neural network, on the other hand, evaluates how likely current node is to win
         self.c = c # Exploration constant
         # self.winner = False
         # self.loser = False
@@ -69,15 +69,18 @@ class MCTS(object):
         game_over, winner = check_game_over(self.board, self.player)
         if game_over:
             # Update note statistics
-            self.wins += winner
+            d_wins = -self.player*winner
+            self.wins += d_wins
             self.Q = self.wins / self.N
+            # self.Q = 0
 
             # Send back the node's negative value to other player
-            return self.player*winner
+            # return self.player*winner
+            return d_wins
 
         else:
             self.leaf = False
-            d_wins = self.CNN.estimate_value(nn_inputs).flatten()
+            d_wins = -self.CNN.estimate_value(nn_inputs).flatten()
             self.wins += d_wins
 
         # This is the only move if we have to pass
@@ -98,7 +101,7 @@ class MCTS(object):
 
         # Update current node score
         self.Q = self.wins / self.N
-        return self.player*d_wins
+        return d_wins
 
     def get_child_scores(self):
         scores = np.array([child.Q + self.c*child.p*(np.sqrt(self.N)/(child.N+1)) for child in self.children]).flatten()
@@ -150,7 +153,10 @@ class MCTS(object):
         if self.move_positions[0] =="pass":
             all_move_probs = np.zeros(len(self.board.flatten())+1)
             all_move_probs[-1] = 1
-            return all_move_probs.reshape((1,65))
+            all_move_probs = all_move_probs.reshape((1,65))
+            if return_child_probs:
+                return all_move_probs, np.ones(1)
+            return all_move_probs
 
         # Otherwise, label probabilities as they would be on the board
         board_move_probs = np.zeros(self.board.shape)
@@ -174,7 +180,7 @@ class MCTS(object):
         return self.children(child_ind)
 
 
-def selfplay(mcts_instance, search_iters=200):
+def selfplay(mcts_instance, search_iters=20):
     """
     Play self to generate CNN training data
     """
@@ -182,7 +188,7 @@ def selfplay(mcts_instance, search_iters=200):
     game = Othello()
     board = game.board
     boardsize = board.shape[0]
-    player = game.player
+    player = game.player*-1
 
     # Set up arrays to keep track of players, game_states, move_probs
     states = np.zeros((200, boardsize, boardsize, 3))
@@ -194,13 +200,13 @@ def selfplay(mcts_instance, search_iters=200):
     tau = 1
 
     while not game_over:
-        print(np.abs(mcts_instance.board).sum())
-        print("Player: {}, Board:".format(player))
-        print(mcts_instance.board)
+        # print(np.abs(mcts_instance.board).sum())
+        # print("Player: {}, Board:".format(player))
+        # print(mcts_instance.board)
 
         # Make tau small as game progresses
         if i == 20:
-            tau = .05
+            tau = .1
 
         # Record current state
         states[i] = make_nn_inputs(board, player)
@@ -214,34 +220,38 @@ def selfplay(mcts_instance, search_iters=200):
             break
 
         # If only one option, select that
-        if i > 0:
-            if len(mcts_instance.children) == 1:
-                move_probs[i,:] = mcts_instance.get_move_probs(tau=tau)
-                print(mcts_instance.move_positions[0])
-                mcts_instance = mcts_instance.children[0]
-                board = mcts_instance.board
-                player *= -1
-                i += 1
-                continue
+        # if i > 0:
+        #     try:
+        #         if len(mcts_instance.children) == 1:
+        #             move_probs[i,:] = mcts_instance.get_move_probs(tau=tau)
+        #             # print(mcts_instance.move_positions[0])
+        #             mcts_instance = mcts_instance.children[0]
+        #             board = mcts_instance.board
+        #             player *= -1
+        #             i += 1
+        #             continue
+        #     except:
+        #         print(selection_probs, mcts_instance.player)
+        #         print(mcts_instance.board, mcts_instance.Q, mcts_instance.N, mcts_instance.leaf)
+        #         raise Exception("Unexpecged Error Occured")
 
         # If multiple moves, choose them via tree search
-        for j in trange(search_iters):
+        for j in range(search_iters):
             mcts_instance.build_tree()
 
         # After performing tree search, pick a move and update
         move_probs[i], selection_probs = mcts_instance.get_move_probs(tau=tau, return_child_probs=True)
         move = np.random.choice(range(len(selection_probs)), p=selection_probs)
-        print(mcts_instance.move_positions[move])
+        # print(mcts_instance.move_positions[move])
         mcts_instance = mcts_instance.children[move]
         player *= -1
         board = mcts_instance.board
 
-        print("\n************\n")
         # Update iter count
         i += 1
 
-    print("Final Score: ", mcts_instance.board.sum())
-    print("Final Board: \n", mcts_instance.board)
+    # print("Final Score: ", mcts_instance.board.sum())
+    # print("Final Board: \n", mcts_instance.board)
     return final_states, final_probs, outcome
 
 class fakeCNN(object):
@@ -265,6 +275,9 @@ if __name__ == '__main__':
     # board[2:-2, 2:-2] = 1
     # board[3:-3, 3:-3] = -1
     # player = 1
-    tree_search = MCTS(1, board, player, fakeCNN())
-
-    final_states, final_probs, outcome = selfplay(tree_search)
+    overall_game_outcomes = []
+    for i in trange(11):
+        tree_search = MCTS(1, board, player, fakeCNN())
+        final_states, final_probs, outcome = selfplay(tree_search, 100)
+        overall_game_outcomes.append(outcome[-1])
+    print(np.sum(overall_game_outcomes))
