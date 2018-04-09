@@ -21,7 +21,7 @@ class Othello_Network():
         self.conv_size = conv_size
         self.n_res_layers = n_res
         self.regularizer = tf.contrib.layers.l2_regularizer(scale=c)
-        self.dm = Data_Manager()
+        self.dm = Data_Manager(max_size=(board_dim**2 - 4)*1000)  # moves per game TIMES num games to save
 
         # --------------
         # Make Network
@@ -45,9 +45,9 @@ class Othello_Network():
             xent = tf.nn.softmax_cross_entropy_with_logits(labels=self.mcts_pi, logits=self.policy_logits)
             mse = tf.losses.mean_squared_error(self.winner_z, self.value_estimate)
             reg_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
-            self.loss = tf.reduce_mean(mse - xent + c * sum(reg_losses))
+            self.loss = tf.reduce_mean(mse - xent + sum(reg_losses))
 
-            self.optimizer = tf.train.AdamOptimizer().minimize(self.loss)
+            self.optimizer = tf.train.AdamOptimizer().minimize(self.loss)  # tune learning rate
 
             # more ops
             self.init_op = tf.global_variables_initializer()
@@ -229,11 +229,11 @@ class Othello_Network():
 
             state_batch, pi_batch, z_batch = self.dm.get_batch(batch_size)
             feed_dict = {self.input_layer: state_batch, self.mcts_pi: pi_batch, self.winner_z: z_batch}
-            l, _ = self.sess.run([self.loss, self.optimizer], feed_dict=feed_dict)
+            l, _ = self.sess.run([self.loss, self.optimizer], feed_dict=feed_dict)  # probably don't need to run loss every time
             losses.append(l)
 
             if verbose:
-                if i % 10 == 0:
+                if i % 100 == 0:
                     print("{}: loss: {}".format(i, l))
 
         self.losses = losses
