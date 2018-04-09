@@ -87,7 +87,8 @@ def check_row(input_row, pos, piece_to_place):
                 if row[i] == piece_to_place:
                     row[i:] = piece_to_place
                     return 1, row
-                return 0, row
+
+            return 0, row
 
     # Now look at cases where it might be in the middle
     else:
@@ -353,7 +354,7 @@ if __name__ == '__main__':
     # row1 = np.array([0,0,0,1,1,-1])
     # row2 = np.array([1,1,1,1,0,0])
     # row3 = np.array([1,1,0,1,1,1])
-    row4 = np.array([ 1., 1.,  1.,  1., -1.,  0.,  0., -1.])
+    row4 = np.array([-1,1,1,1,1,1,1,0])
     # row5 = np.array([1,-1,1,-1,1,0])
     # row6 = np.array([-1,1,0,1,-1,1])
     # row7 = np.array([1,0])
@@ -365,8 +366,8 @@ if __name__ == '__main__':
     # print(row2, check_row(row2, 4, 1))
     # print(row3,check_row(row3, 2,-1))
     # print(row3,check_row(row3, 2, 1))
-    print(row4,check_row(row4, 6,-1))
-    print(row4,check_row(row4, 6, 1))
+    print(row4,check_row(row4, 7,-1))
+    print(row4,check_row(row4, 7, 1))
     # print(row5,check_row(row5, 5,-1))
     # print(row5,check_row(row5, 5, 1))
     # print(row6,check_row(row6, 2,-1))

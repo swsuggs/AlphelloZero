@@ -194,12 +194,16 @@ def selfplay(mcts_instance, search_iters=200):
     tau = 1
 
     while not game_over:
+        print(np.abs(mcts_instance.board).sum())
+        print("Player: {}, Board:".format(player))
+        print(mcts_instance.board)
+
         # Make tau small as game progresses
         if i == 20:
-            tau = .01
+            tau = .05
 
         # Record current state
-        states[i] = make_nn_inputs(mcts_instance.board, player)
+        states[i] = make_nn_inputs(board, player)
 
         # Check to see if game has ended
         game_over, winner = check_game_over(board, player)
@@ -230,11 +234,9 @@ def selfplay(mcts_instance, search_iters=200):
         print(mcts_instance.move_positions[move])
         mcts_instance = mcts_instance.children[move]
         player *= -1
-
+        board = mcts_instance.board
 
         print("\n************\n")
-        print("Player: {}, Board:".format(player))
-        print(mcts_instance.board)
         # Update iter count
         i += 1
 
@@ -266,5 +268,3 @@ if __name__ == '__main__':
     tree_search = MCTS(1, board, player, fakeCNN())
 
     final_states, final_probs, outcome = selfplay(tree_search)
-    print(final_states[:,0,0,2])
-    print(final_states[-1,:,:,:])
