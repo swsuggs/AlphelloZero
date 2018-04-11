@@ -1,8 +1,9 @@
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 from softmax import softmax
-
+import cPickle
 from data_manager import Data_Manager
+from tqdm import trange
 
 class Othello_Network():
 
@@ -22,7 +23,7 @@ class Othello_Network():
         self.conv_size = conv_size
         self.n_res_layers = n_res
         self.regularizer = tf.contrib.layers.l2_regularizer(scale=c)
-        self.dm = Data_Manager(max_size=(board_dim**2 - 4)*1000)  # moves per game TIMES num games to save
+        self.dm = Data_Manager(max_size=(board_dim**2 - 4)*500)  # moves per game TIMES num games to save
 
         # --------------
         # Make Network
@@ -140,7 +141,7 @@ class Othello_Network():
 
     def _value_head(self, input_layer):
         """
-        Estimate value of board state by applying value head network to input_layer.
+        Estimate value of board state by applying vlossalue head network to input_layer.
 
         :param input_layer: the layer to apply value head to
         :return: scalar estimating value of board position (between -1 and 1)
@@ -226,12 +227,15 @@ class Othello_Network():
         losses = []
 
         # sample mini-batch of 2048
-        for i in range(n_iters):
+        print("Training Network")
+        for i in trange(n_iters):
 
             state_batch, pi_batch, z_batch = self.dm.get_batch(batch_size)
             feed_dict = {self.input_layer: state_batch, self.mcts_pi: pi_batch, self.winner_z: z_batch}
-            l, _ = self.sess.run([self.loss, self.optimizer], feed_dict=feed_dict)  # probably don't need to run loss every time
-            losses.append(l)
+            _ = self.sess.run([self.optimizer], feed_dict=feed_dict)
+            if i%2 == 0:
+                l, _ = self.sess.run([self.loss], feed_dict=feed_dict)  # probably don't need to run loss every time
+                losses.append(l)
 
             if verbose:
                 if i % 100 == 0:
@@ -241,3 +245,6 @@ class Othello_Network():
             self.losses.extend(losses)
         else:
             self.losses = losses
+
+        # Save losses to pickle file
+        cPickle.dump(self.losses, open("loss.cpkl",'wb'))
