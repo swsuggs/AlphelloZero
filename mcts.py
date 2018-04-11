@@ -128,15 +128,25 @@ class MCTS(object):
         # Return the negative of our d_wins to opponent
         return -d_wins
 
-    def get_next_move(self, tau=1, best=False):
+    def get_next_move(self, tau=1, choose_best=False):
         """
         Choose next move in proportion to N^(1/tau), where N is the current
         visit count of each child
         """
-        visit_nums = np.array([child.N for child in self.children])**(1/tau)
+        # First, get number of visits to each child
+        visit_nums = np.array([child.N for child in self.children])
+
+        # If in competitive play, simply choose the best most visited move
+        if choose_best:
+            best = np.argmax(visit_nums)
+            return self.children[best], self.move_positions[best]
+
+        # Otherwise, get visit probabilities for each node
+        visit_nums = visit_nums**(1./tau)
         visit_probs = visit_nums/visit_nums.sum()
         next_node = np.random.choice(range(visit_probs.shape[0]), p=visit_probs)
-        return self.children[next_node], self.move_positions(next_node)
+
+        return self.children[next_node], self.move_positions[next_node]
 
     def get_move_probs(self, tau=1, return_child_probs=False):
         """
@@ -172,27 +182,36 @@ class MCTS(object):
             return  all_move_probs, move_probs
         return all_move_probs
 
-    def get_child_by_move(self, move):
+
+    def play_move(self, n_iters=100):
         """
-        Get child node corresponding to particular move (i.e. opponent move)
+        Play a move against opponent neural Network
+        """
+        # Start with MCTS to get best move
+        for i in xrange(n_iters):
+            self.build_tree()
+        child, move = self.get_next_move(choose_best=True)
+        return child, move
+
+    def receive_opponent_move(self, move):
+        """
+        Get move from opponent and update current state
         """
         child_ind = self.move_positions.index(move)
-        return self.children(child_ind)
+        return self.children[child_ind]
 
-
-def selfplay(mcts_instance, search_iters=20):
+def selfplay(mcts_instance, search_iters=200):
     """
     Play self to generate CNN training data
     """
     # Set up game and get params
-    game = Othello()
-    board = game.board
+    board = mcts_instance.board
     boardsize = board.shape[0]
-    player = game.player*-1
+    player = mcts_instance.player
 
     # Set up arrays to keep track of players, game_states, move_probs
-    states = np.zeros((200, boardsize, boardsize, 3))
-    move_probs = np.zeros((200,65))
+    states = np.zeros((100, boardsize, boardsize, 3))
+    move_probs = np.zeros((100,65))
 
     # Keep track of whether game is over, as well as temperature on move choice
     game_over = False
@@ -219,22 +238,6 @@ def selfplay(mcts_instance, search_iters=20):
             final_probs = move_probs[:i-1,:]
             break
 
-        # If only one option, select that
-        # if i > 0:
-        #     try:
-        #         if len(mcts_instance.children) == 1:
-        #             move_probs[i,:] = mcts_instance.get_move_probs(tau=tau)
-        #             # print(mcts_instance.move_positions[0])
-        #             mcts_instance = mcts_instance.children[0]
-        #             board = mcts_instance.board
-        #             player *= -1
-        #             i += 1
-        #             continue
-        #     except:
-        #         print(selection_probs, mcts_instance.player)
-        #         print(mcts_instance.board, mcts_instance.Q, mcts_instance.N, mcts_instance.leaf)
-        #         raise Exception("Unexpecged Error Occured")
-
         # If multiple moves, choose them via tree search
         for j in range(search_iters):
             mcts_instance.build_tree()
@@ -242,7 +245,6 @@ def selfplay(mcts_instance, search_iters=20):
         # After performing tree search, pick a move and update
         move_probs[i], selection_probs = mcts_instance.get_move_probs(tau=tau, return_child_probs=True)
         move = np.random.choice(range(len(selection_probs)), p=selection_probs)
-        # print(mcts_instance.move_positions[move])
         mcts_instance = mcts_instance.children[move]
         player *= -1
         board = mcts_instance.board
@@ -253,6 +255,73 @@ def selfplay(mcts_instance, search_iters=20):
     # print("Final Score: ", mcts_instance.board.sum())
     # print("Final Board: \n", mcts_instance.board)
     return final_states, final_probs, outcome
+
+def play_game(black_net, white_net, mcts_iters=100):
+    """
+    Play a game between two neural networks to see which is better
+
+    Inputs:
+    ----------------------
+        black_net - neural net to control black player
+        white_net - neural net to control white player
+        mcts_iters - number of iters to tree search for each move
+
+    Returns:
+    ----------------------
+        winner - 1 if white, -1 of black
+    """
+    game = Othello()
+    board = game.board
+
+    # First define our black net, since it will go first.
+    black_mcts = MCTS(1, board, -1, black_net)
+
+    # Black begins by making a move, after which we use its board to
+    # initialize white
+    player = -1
+    black_mcts, move = black_mcts.play_move(n_iters=mcts_iters)
+
+    # Now initialize white once black has made its move.
+    board = black_mcts.board
+    white_mcts = MCTS(1, board, 1, white_net)
+    player *= -1
+
+    # Keep track of whether game is over
+    game_over = False
+    # Now actually play the game
+    while not game_over:
+
+        # Allow current player to tree_search for a move
+        if player==-1:
+            black_mcts, move = black_mcts.play_move(n_iters=mcts_iters)
+            white_mcts = white_mcts.receive_opponent_move(move)
+        else:
+            white_mcts, move = white_mcts.play_move(n_iters=mcts_iters)
+            black_mcts = black_mcts.receive_opponent_move(move)
+
+        # Update current player and board and see if game is finished
+        player *= -1
+        board = black_mcts.board
+        game_over, winner = check_game_over(board, player)
+    return winner
+
+
+def faceoff(new_net, old_net, matches=100, mcts_iters=100, tau = .1):
+    """
+    Make trained network play old network
+
+    Inputs:
+    ----------------------
+        new_net - trained/updated network
+    """
+    game = Othello()
+    black = game.player
+    board = game.board
+
+    winner_where_new_plays_black = []
+    for _ in trange(50):
+        pass
+
 
 class fakeCNN(object):
     def __init__(self):
@@ -278,6 +347,6 @@ if __name__ == '__main__':
     overall_game_outcomes = []
     for i in trange(11):
         tree_search = MCTS(1, board, player, fakeCNN())
-        final_states, final_probs, outcome = selfplay(tree_search, 100)
+        final_states, final_probs, outcome = selfplay(tree_search, 200)
         overall_game_outcomes.append(outcome[-1])
     print(np.sum(overall_game_outcomes))

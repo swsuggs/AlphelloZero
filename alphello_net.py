@@ -17,6 +17,7 @@ class Othello_Network():
         """
         self.board_dim = board_dim
         self.time_steps = time_steps
+        self.losses = None
         self.n_conv_filters = n_filters
         self.conv_size = conv_size
         self.n_res_layers = n_res
@@ -236,4 +237,7 @@ class Othello_Network():
                 if i % 100 == 0:
                     print("{}: loss: {}".format(i, l))
 
-        self.losses = losses
+        if self.losses is not None:
+            self.losses.extend(losses)
+        else:
+            self.losses = losses
