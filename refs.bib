@@ -1,0 +1,134 @@
+
+
+%% Original alpha-beta prunign paper
+@article{alpha_beta,
+title = "An analysis of alpha-beta pruning",
+journal = "Artificial Intelligence",
+volume = "6",
+number = "4",
+pages = "293 - 326",
+year = "1975",
+issn = "0004-3702",
+doi = "https://doi.org/10.1016/0004-3702(75)90019-3",
+url = "http://www.sciencedirect.com/science/article/pii/0004370275900193",
+author = "Donald E. Knuth and Ronald W. Moore"
+}
+
+
+%% Details branching factor of Othello, chess, and other games.
+@article{branching_factor,
+  author    = {Aske Plaat and
+               Jonathan Schaeffer and
+               Wim Pijls and
+               Arie de Bruin},
+  title     = {Nearly Optimal Minimax Tree Search?},
+  journal   = {CoRR},
+  volume    = {abs/1404.1518},
+  year      = {2014},
+  url       = {http://arxiv.org/abs/1404.1518},
+  archivePrefix = {arXiv},
+  eprint    = {1404.1518},
+  timestamp = {Wed, 07 Jun 2017 14:41:55 +0200},
+  biburl    = {https://dblp.org/rec/bib/journals/corr/PlaatSPB14b},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+
+
+%%% ResNet Paper
+@article{resnet,
+  author    = {Kaiming He and
+               Xiangyu Zhang and
+               Shaoqing Ren and
+               Jian Sun},
+  title     = {Deep Residual Learning for Image Recognition},
+  journal   = {CoRR},
+  volume    = {abs/1512.03385},
+  year      = {2015},
+  url       = {http://arxiv.org/abs/1512.03385},
+  archivePrefix = {arXiv},
+  eprint    = {1512.03385},
+  timestamp = {Wed, 07 Jun 2017 14:41:17 +0200},
+  biburl    = {https://dblp.org/rec/bib/journals/corr/HeZRS15},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
+}
+
+
+
+%% Analysis of Monte Carlo experiments on Othello.  Found that hand-tuned
+% algorithms using alpha-beta pruning worked better because it is difficult to
+% determine winner until end of game.
+@article{naive_mcts_othello,
+  title={Playing Othello Using Monte Carlo},
+  author={Nijssen, JPAM},
+  journal={Strategies},
+  pages={1--9},
+  year={2007}
+}
+
+% Use straight UCT but with weighted rollout to guide decisions
+@inproceedings{weighted_mcts_othello,
+  title={Experiments with Monte Carlo Othello},
+  author={Hingston, Philip and Masek, Martin},
+  booktitle={Evolutionary Computation, 2007. CEC 2007. IEEE Congress on},
+  pages={4059--4064},
+  year={2007},
+  organization={IEEE}
+}
+
+
+%% Analysis discussing how temporal difference learning (TDL) can be applied to
+% MCTS to improve Othello outcomes by integrating domain knowledge.
+@INPROCEEDINGS{tdl_mcts_othello,
+author={D. Robles and P. Rohlfshagen and S. M. Lucas},
+booktitle={2011 IEEE Conference on Computational Intelligence and Games (CIG'11)},
+title={Learning non-random moves for playing Othello: Improving Monte Carlo Tree Search},
+year={2011},
+volume={},
+number={},
+pages={305-312},
+keywords={Monte Carlo methods;function approximation;game theory;games of skill;learning (artificial intelligence);minimax techniques;temporal reasoning;trees (mathematics);MC simulations;MCTS algorithms;Monte Carlo simulations;Monte Carlo tree search;TDL;algorithm default policy;board game Othello;domain-specific knowledge;game-specific value function;game-theoretic values;linear function approximator;minimax tree;nonrandom moves;nonuniformly random default policy;state value function;temporal difference learning;tree policy;upper confidence bounds;Approximation algorithms;Approximation methods;Games;Law;Monte Carlo methods;Reliability},
+doi={10.1109/CIG.2011.6032021},
+ISSN={2325-4270},
+month={Aug},}
+
+
+%% Creates Temporal Difference with Monte Carlo (TDMC(lambda)) and shows that
+% it plays othello better than regular temporal difference methods (TD(lambda))
+@INPROCEEDINGS{tdmc,
+author={Y. Osaki and K. Shibahara and Y. Tajima and Y. Kotani},
+booktitle={2008 IEEE Symposium On Computational Intelligence and Games},
+title={An Othello evaluation function based on Temporal Difference Learning using probability of winning},
+year={2008},
+volume={},
+number={},
+pages={205-211},
+keywords={Monte Carlo methods;computer games;learning (artificial intelligence);Monte Carlo simulation;Othello evaluation function;logic games;reinforcement learning method;self-teaching evaluation functions;temporal difference learning;winning probabilities;Agriculture;Computational modeling;Educational institutions;Learning systems;Logic;Optimization methods;Testing},
+doi={10.1109/CIG.2008.5035641},
+ISSN={2325-4270},
+month={Dec},}
+
+
+% Very extensive survey of MCTS methods
+@ARTICLE{survey_mcts, 
+author={C. B. Browne and E. Powley and D. Whitehouse and S. M. Lucas and P. I. Cowling and P. Rohlfshagen and S. Tavener and D. Perez and S. Samothrakis and S. Colton},
+journal={IEEE Transactions on Computational Intelligence and AI in Games},
+title={A Survey of Monte Carlo Tree Search Methods},
+year={2012},
+volume={4},
+number={1},
+pages={1-43},
+keywords={Monte Carlo methods;game theory;tree searching;MCTS research;Monte carlo tree search methods;computer Go;key game;nongame domains;random sampling generality;Artificial intelligence;Computers;Decision theory;Game theory;Games;Markov processes;Monte Carlo methods;Artificial intelligence (AI);Monte Carlo tree search (MCTS);bandit-based methods;computer Go;game search;upper confidence bounds (UCB);upper confidence bounds for trees (UCT)},
+doi={10.1109/TCIAIG.2012.2186810},
+ISSN={1943-068X},
+month={March},}
+
+
+% Alpha Go Zero Paper
+@article{Silver2017MasteringTG,
+  title={Mastering the game of Go without human knowledge.},
+  author={David Silver and Julian Schrittwieser and Karen Simonyan and Ioannis Antonoglou and Aja Huang and Arthur Guez and Thomas Hubert and Lucas R Baker and Matthew Lai and Adrian Bolton and Yutian Chen and Timothy P. Lillicrap and Fan Xin Hui and Laurent Sifre and George van den Driessche and Thore Graepel and Demis Hassabis},
+  journal={Nature},
+  year={2017},
+  volume={550 7676},
+  pages={354-359}
+}
