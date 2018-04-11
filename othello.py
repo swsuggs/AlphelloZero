@@ -329,6 +329,7 @@ class Othello(object):
             pass
 
 if __name__ == '__main__':
+
     # full_test_board = np.zeros((8,8))
     # test_array = np.array([[ 1, 1, 1, 1],
     #                        [-1, 1,-1, 1],
@@ -341,6 +342,7 @@ if __name__ == '__main__':
     # Test legal move checker
     # game = Othello()
     # print(game.board)
+    print(check_game_over(np.abs(game.board), -1))
     # print(adj_to_opponent(game.board, game.player))
 
     # print(get_legal_moves(game.board, game.player))
@@ -354,7 +356,7 @@ if __name__ == '__main__':
     # row1 = np.array([0,0,0,1,1,-1])
     # row2 = np.array([1,1,1,1,0,0])
     # row3 = np.array([1,1,0,1,1,1])
-    row4 = np.array([-1,1,1,1,1,1,1,0])
+    # row4 = np.array([-1,1,1,1,1,1,1,0])
     # row5 = np.array([1,-1,1,-1,1,0])
     # row6 = np.array([-1,1,0,1,-1,1])
     # row7 = np.array([1,0])
@@ -366,8 +368,8 @@ if __name__ == '__main__':
     # print(row2, check_row(row2, 4, 1))
     # print(row3,check_row(row3, 2,-1))
     # print(row3,check_row(row3, 2, 1))
-    print(row4,check_row(row4, 7,-1))
-    print(row4,check_row(row4, 7, 1))
+    # print(row4,check_row(row4, 7,-1))
+    # print(row4,check_row(row4, 7, 1))
     # print(row5,check_row(row5, 5,-1))
     # print(row5,check_row(row5, 5, 1))
     # print(row6,check_row(row6, 2,-1))

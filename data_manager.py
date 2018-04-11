@@ -57,6 +57,4 @@ class Data_Manager():
 
         batch = np.random.choice(range(len(self.states)), size, replace=False)
 
-        return self.states[batch], self.pis[batch], self.zs[batch]
-
-
+        return self.states[batch], self.pis[batch], self.zs[batch].reshape(size,1)
