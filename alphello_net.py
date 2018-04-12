@@ -234,7 +234,7 @@ class Othello_Network():
             feed_dict = {self.input_layer: state_batch, self.mcts_pi: pi_batch, self.winner_z: z_batch}
             _ = self.sess.run([self.optimizer], feed_dict=feed_dict)
             if i%2 == 0:
-                l, _ = self.sess.run([self.loss], feed_dict=feed_dict)  # probably don't need to run loss every time
+                l = self.sess.run([self.loss], feed_dict=feed_dict)  # probably don't need to run loss every time
                 losses.append(l)
 
             if verbose:
